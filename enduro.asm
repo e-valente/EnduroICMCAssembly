@@ -65,86 +65,32 @@ DesenhaCircuito:
   push r7
 
   
-  loadn r0, #'}'
-  loadn r1, #125
-  loadn r2, #154
-  loadn r3, #2048 ;cinze
-  add r0, r0, r3 ; estrada cinza
+  loadn r0, #'~'
+  loadn r1, #10 ;posicao inicial
+  loadn r2, #80 ;incremento
+  loadn r3, #1210 ;limite
+  loadn r4, #3072 ;azul
+  add r0, r0, r4 ; beiradas da estrada sao azuis
   
   
 ;*********DESENHA ARESTA SUPERIOR*******  
 DesenhaCircuito_Loop1:  
  
   outchar r0, r1
-  inc r1
-  cmp r1, r2
+  add r1, r1, r2
+  cmp r1, r3
   jne DesenhaCircuito_Loop1
   
-  loadn r1, #165
-  loadn r2, #194
-  
+
+  loadn r1, #24 ;posicao inicial
+  loadn r2, #80 ;incremento
+  loadn r3, #1224 ;limite  
 DesenhaCircuito_Loop2:  
  
   outchar r0, r1
-  inc r1
-  cmp r1, r2
+  add r1, r1, r2
+  cmp r1, r3
   jne DesenhaCircuito_Loop2
-  
-  
-  
-  loadn r1, #205
-  loadn r2, #234
-  
-DesenhaCircuito_Loop3:  
- 
-  outchar r0, r1
-  inc r1
-  cmp r1, r2
-  jne DesenhaCircuito_Loop3  
-;*********FIM DA ARESTA SUPERIOR*******    
-
-
-;**********DESENHA ARESTA ESQUERDA***
-
-;coluna 1 -> aresta esquerda
-  loadn r1, #245
-  loadn r2, #885
-  loadn r3, #40
-  
-  
-DesenhaCircuito_Loop4:  
- 
-  outchar r0, r1
-  add r1, r1, r3
-  cmp r1, r2
-  jne DesenhaCircuito_Loop4  
-
-
-  
- ;coluna 2 -> aresta esquerda
-  loadn r1, #246
-  loadn r2, #886
-  loadn r3, #40
-  
-DesenhaCircuito_Loop5:  
- 
-  outchar r0, r1
-  add r1, r1, r3
-  cmp r1, r2
-  jne DesenhaCircuito_Loop5 
-  
-  
-  ;coluna 3 -> aresta esquerda
-  loadn r1, #247
-  loadn r2, #887
-  loadn r3, #40
-  
-DesenhaCircuito_Loop6:  
- 
-  outchar r0, r1
-  add r1, r1, r3
-  cmp r1, r2
-  jne DesenhaCircuito_Loop6 
   
   ;desenha carro
   loadn r0, #'{'
@@ -163,7 +109,7 @@ DesenhaCircuito_Loop6:
    outchar r0, r1
   
   
-;**********FIM ARESTA ESQUERDA***  
+
   pop r7
   pop r6
   pop r5
