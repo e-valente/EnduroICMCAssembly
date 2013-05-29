@@ -26,9 +26,10 @@
 
 jmp main
 
-logojogo : string ".:ENDURO ICMC:."	; Poe "\0" automaticamente no final da string
-str_putword : string "Digite a palavra desejada: "	; Poe "\0" automaticamente no final da string
-str_input_char: string "Digite uma letra: "
+logojogo : string "ICMC ENDURO"	; Poe "\0" automaticamente no final da string
+str_score : string "Score: "	; Poe "\0" automaticamente no final da string
+str_lives: string "Lives:  "
+str_car: string  "{ { {"
 str_youlose: string "Voce perdeu!"
 str_youwin: string "Voce ganhou!"
 str_game_or_exit: string "Tecle (j) para jogar ou (s) para sair!"
@@ -43,17 +44,65 @@ str_out: var #41
 
 main:
 
+	;primeiro os caracteres
+	;estáticos
+	loadn r1, #logojogo
+	loadn r0, #66
+	loadn r2, #512  ;verde
+	call ImprimeString    ;imprime logo do jogo
+	loadn r2, #0
+	loadn r1, #0
+	loadn r1, #str_lives
+	loadn r0, #266
+	call ImprimeString    ;imprime lives
+	loadn r1, #str_car   ;carros da vida (lives)
+	loadn r0, #273
+	loadn r2, #2304      ;vermelho
+	call ImprimeString    ;imprime vidas
+	loadn r2, #0
+	loadn r1, #str_score
+	loadn r0, #346
+	call ImprimeString    ;imprime score (string)
 	;tela inicial
 	;call LimpaTela
 	loadn r0, #1177  ;poiscao antiga do carro
 	loadn r1, #1177  ;posicao nova do carro
 	call DesenhaCarro
 	
-	loadn r5, #0
-	loadn r6, #1000
-
+	;desenha carros aleatorios
+	;na pista (fix it!)
+	;desenha carro principal
+	loadn r4, #'{'
+	loadn r5, #512 ;verde
+	add r4, r4, r5 ;carro verde
+	loadn r1, #175 ;faixa da esquerda
+        outchar r4, r1 ;imprime carro
 	
-	Loop:
+	loadn r4, #'{'
+	loadn r5, #1280 ;roxo
+	add r4, r4, r5 ;carro roxo
+	loadn r1, #773 ;faixa da esquerda
+        outchar r4, r1	;imprime carro
+        
+        loadn r4, #'{'
+        loadn r5, #2816 ;amarelo
+	add r4, r4, r5 ;carro amarelo
+	loadn r1, #580 ;faixa da direita
+        outchar r4, r1	;imprime carro
+        
+        loadn r4, #'{'
+        loadn r5, #256 ;marrom
+	add r4, r4, r5 ;carro marrom
+	loadn r1, #60 ;faixa da direita
+        outchar r4, r1	;imprime carro
+
+	;*****LOOP PRINCIPAL DO JOGO
+	;configura loop
+	loadn r5, #0     ;de zero
+	loadn r6, #1000   ;até n
+	
+	
+	Main_Loop:
 
 
 	call Delay
@@ -104,11 +153,22 @@ main:
 	call FaixasDoMeioEstado0
 	call FaixasDoMeioEstado3
 	call ControlaCarro
+	
+	;atualiza impressao do score
+	push r0
+	push r6
+	mov r0, r5
+	loadn r1, #353
+	call PrintInteger
+	pop r6
+	pop r0
 	
 	
 	inc r5
 	cmp r5, r6
-	jne Loop
+	jne Main_Loop
+	
+	;***** FIM DO LOOP PRINCIPAL DO JOGO
 
   halt
 	
@@ -162,7 +222,9 @@ ControlaCarro:  ;recebe em r0 a posicao atual do carro
   loadn r1,#0
   loadn r2, #'a'  ; esquerda
   loadn r3, #'d' ;direita
-  loadn r4, #255  ;usado no final 
+  loadn r4, #'w' ;frente
+  loadn r5, #'s' ;tras
+  loadn r6, #40  ;usado pra incrementar/decrementar frente/tras
   
   inchar r1        ;caractere estara em r1
   
@@ -170,9 +232,18 @@ ControlaCarro:  ;recebe em r0 a posicao atual do carro
   cmp r1, r2   ;esquerda
   jeq ControlaCarro_Esquerda
   
-  ;compar esquerda
+  ;compara esquerda
   cmp r1, r3   ;direita
   jeq ControlaCarro_Direita
+  
+   ;compara com frente
+  cmp r1, r4   ;frente
+  jeq ControlaCarro_Frente
+  
+   ;compara com tras
+  cmp r1, r5   ;tras
+  jeq ControlaCarro_Tras
+  
   
   ;se nao for esquerda é lixo
   ;nao desenhamos e montemos a posicao antiga
@@ -205,6 +276,23 @@ ControlaCarro_Esquerda:
  mov r0, r1         ;a posicao atual sera a antiga
  jmp ControlaCarro_FIM
  
+ 
+ ControlaCarro_Frente:
+ mov r1, r0
+ sub r1, r1, r6      ;decrementa 40 posicoes (anda pra frente)
+ call DesenhaCarro  ;r0->pos antiga, r1 -> atual
+ mov r0, r1         ;a posicao atual sera a antiga
+ jmp ControlaCarro_FIM
+ 
+ 
+ ControlaCarro_Tras:
+ mov r1, r0
+ add r1, r1, r6      ;inccrementa 40 posicoes (anda pra tras)
+ call DesenhaCarro  ;r0->pos antiga, r1 -> atual
+ mov r0, r1         ;a posicao atual sera a antiga
+ jmp ControlaCarro_FIM
+ 
+ 
 ControlaCarro_FIM:
  
   pop r7
@@ -230,7 +318,7 @@ Delay:
   push r6
   push r7
   
-  loadn r0, #2000
+  loadn r0, #500
   loadn r1, #0
   
   Delay_Loop:
@@ -563,5 +651,147 @@ FaixasDoMeioEstado3_Loop:
   pop r0
 
   rts  
+  
+;************************IMPRIME STRING*********************************
+
+ImprimeString:  ;r1->posicao inicial da string, r0-> posicao inicial da tela, r2-> constante para cor devolve r6 com ultima posicao impressa
+
+  push r0 ;backup nos registradores
+  push r1
+  push r2
+  push r3
+  push r4
+  
+  ;copia cor para registrador r4
+  mov r4, r2
+  
+  loadn r2, #'\0'  ;usado na comparacao
+  
+  
+ImprimeString_Loop:
+
+  loadi r3, r1      ; r3 <= conteudo da primeira posicao do vetor
+  cmp r3, r2 ;compara conteudo de r3 e r2
+  jeq ImprimeString_Sai  ;igual \0 => sai da rotina
+  add r3, r3, r4         ;soma constante para cor
+  outchar r3, r0	;imprime r3 na posicao r0
+  inc r0		;incrementa a posicao da tela de 1
+  inc r1		;incrementa a posicao da string de 1
+  
+  jmp ImprimeString_Loop
+  
+  
+ImprimeString_Sai:
+
+
+  mov r6, r0 ;grava a ultima posicao da tela em r6
+  
+  pop r4
+  pop r3
+  pop r2
+  pop r1
+  pop r0
+  
+  rts    
+	  
+PrintInteger: ;ro-> numero r1->posicao; retorna r6 número de digitos do numero 
+
+  ;empilha (=protege) o estado atual dos registradores
+  push r0	;empilho r0 (numero a ser impresso)
+  push r1	;empilho r1 (posicao do video)
+  push r2	;empilha r2, pois será usado para guardarmos o 
+		;frame da pilha
+  push r3	;empilha r3, pois será usado como variavel 
+		;auxiliar (operacao mod e durante a conversao pra ascii)
+  push r4	;empilha r4, pois será usado como variavel auxiliar que 
+		;conterá o valor atualizado após a operacao mod
+  push r5       ;empilha r5, que o conteudo de sp atual  para ser comparado com frame 
+   
+   
+   ;se o numero for zero imprimimos e retornamos
+   loadn r2, #0
+   cmp r0, r2        
+   jne PrintInteger_Init
+   loadn r3, #48    ;ascii	
+   add r2, r2, r3
+   outchar r2, r1   ;imprime o zero na posicao r1
+   ;imprimi só uma posicao 
+   ;entao retorna 1 em r6
+   loadn r6, #1
+   
+   pop r5
+   pop r4
+   pop r3
+   pop r2
+   pop r1
+   pop r0
+  
+   rts  
+   
+   
+   
+   
+PrintInteger_Init:  
+  ;copia conteudo de sp para r2 para termos o controle da pilha
+  ;r2 terá o status da pilha antes da execucao da subrotina
+  ;ou seja, usaremos para saber o estado da pilha antes de 
+  ;empilharmos os digitos. Uma outra maneira seria ter uma 
+  ;variavel pra controlar o status da pilha (pelos pushes e pops).
+  ;Da maneira aqui descrita é mais elegante, pois sp incrementa/decrementa 
+  ;automatico qdo demos push/pop
+  mov r2, sp	;copia conteudo de sp em r2
+  loadn r6, #0
+  
+Loop_Compare:
+
+  loadn r3, #0		;r3 conterá zero, pois será comparado com o 
+			;numero a ser impresso a cada iteracao do loop
+  cmp r0, r3		;r0==r3?
+  jeq Loop_PrintInteger ;acabamos de empilhar os digitos?, 
+			;se sim, chamamos o bloco para imprimir
+  
+  ;se houver mais digitos a serem impressos 
+  ;continua aqui embaixo para empilharmos
+  
+  loadn r3, #10		; r3 conterá 10 para ser usado na 
+			;operacao "mode" (resto da divisao)
+  mod r4, r0, r3	;r4 = r0%r3 => r4 = numero%10. R4 conterá o resto da divisao, que sera o digito atual da iteracao.
+  div r0, r0, r3	;r0 = r0/r3 divide nosso numero de entrada por 10 (ex: 541 => 54,1 => 54 (int)) pra buscar o proximo digito
+			;Note que a cada iteracao nosso numero vai diminuindo de um algarismo
+  loadn r3, #48		;r3=48, pois devera somado ao digito pra conversao ascii
+  add r4, r4, r3	;atualiza o conteudo apontado por r4 é tal que r4 = r4 + r3 => r4 = r4 + 48
+  push r4		;Empilha nosso digito (conteudo de r4). Esse push guardará os digitos da direita para esquerda
+  
+  jmp Loop_Compare	;retorna ao inicio do label para "buscar" 
+			;mais digitos
+  
+  
+Loop_PrintInteger:
+  
+  mov r5, sp		;Precisamos saber o estado da pilha (qtos digitos foram empilhados) 
+			;r5 terá o conteudo de sp para ser comparado 
+			;com frame (r2) (estado inicial)
+  cmp r5, r2		;sp == frame?, ou seja, acabaram os digitos da 
+			;pilha? (pilha chegou a seu estado inicial?)
+  jeq Exit_PrintInteger ;se acabaram sai da subrotina, senao imprime
+  
+  pop r4		;retira o digito da pilha: a ordem é do mais significativo (da "esquerda") pra o menos
+		
+  outchar r4, r1	;imprime o digito que esta armazenado em r4 na posicao armazenada em r1
+  inc r6
+  
+  inc r1		;increenta a posicao do video pra imprimir
+  jmp Loop_PrintInteger ;continua o loop até acabarem os digitos
+ 
+ Exit_PrintInteger:
+
+  pop r5
+  pop r4
+  pop r3
+  pop r2
+  pop r1
+  pop r0
+  
+  rts 	  
     
 ;**************FIM DO ENDURO*****************  
