@@ -1,4 +1,5 @@
-; Hello World - Escreve mensagem armazenada na memoria na tela
+;Jogo Enduro
+;Emanuel Valente - emanuelvalente@gmail.com
 
 
 
@@ -65,6 +66,8 @@ main:
 	call ImprimeString    ;imprime score (string)
 	;tela inicial
 	;call LimpaTela
+	;fonteiras
+	call DesenhaFronteiras 
 	loadn r0, #1177  ;poiscao antiga do carro
 	loadn r1, #1177  ;posicao nova do carro
 	call DesenhaCarro
@@ -185,6 +188,27 @@ DesenhaCarro:
   push r5
   push r6
  
+ ;************* novo - teste fronteiras
+ ;esquerda
+ ;loadn r2, #49  ;***(colocar um vetor e comparar a posicao)
+ ;dec r1
+ 
+ loadn r6, #1
+ call Compara_Posicoes_Esquerda
+ cmp r6, r7
+ ;cmp r1, r2
+ ;inc r1
+ jne DesenhaCarro_OK
+ ;trata a fronteira
+ inc r0
+ inc r1
+ mov r7, r0
+ jmp DesenhaCarro_FIM
+ 
+ 
+ 
+ ;*******fim novo
+DesenhaCarro_OK: 
  ;apagamos a posicao antiga
  loadn r4, #' '
  outchar r4, r0
@@ -197,9 +221,10 @@ DesenhaCarro:
   
   ;loadn r6, #1177  ;posicao inicial do carro
   outchar r4, r1
-  
   mov r7, r6   ;retorna em r7 a posicao do carro
   
+DesenhaCarro_FIM:
+
   pop r6
   pop r5
   pop r4
@@ -259,14 +284,13 @@ ControlaCarro:  ;recebe em r0 a posicao atual do carro
   
   
   
-  
+;r0 posisao atual  
 ControlaCarro_Esquerda:
  mov r1, r0
  dec r1
  call DesenhaCarro  ;r0->pos antiga, r1 -> atual
  mov r0, r1         ;a posicao atual sera a antiga
  jmp ControlaCarro_FIM
- 
  
  
  ControlaCarro_Direita:
@@ -338,6 +362,43 @@ Delay:
 rts
 
 
+;***********DESENHA FRONTEIRAS (esquerda, direita, cima e baixo**
+
+DesenhaFronteiras:
+
+  push r0
+  push r1
+  push r2
+  push r3
+  push r4
+  push r5
+  push r6
+  push r7
+
+;fronteiras da esquerda
+  loadn r0, #'a'
+  loadn r1, #9  ;posicao inicial
+  loadn r2, #40 ;incremento
+  loadn r3, #1210 ; limite
+  
+DesenhaFronteiras_Esquerda:
+  outchar r0, r1
+  add r1, r1, r2
+  cmp r1, r3
+  jle DesenhaFronteiras_Esquerda
+  
+ 
+  pop r7
+  pop r6
+  pop r5
+  pop r4
+  pop r3
+  pop r2
+  pop r1
+  pop r0
+
+  rts
+  
 ;*****************ESTADOS DA FAIXA
 ;*********ESTADO 0 zero (Apaga as faixas)************
 FaixasEstado0:
@@ -793,5 +854,52 @@ Loop_PrintInteger:
   pop r0
   
   rts 	  
-    
+
+ ;****************Compara_Posicoes para testes de fonteiras
+ 
+Compara_Posicoes_Esquerda:  ;r1 nova posicao do carro, retorna em r7 se esta no limite: 1->sim, 0->nao
+  push r0
+  push r1
+  push r2
+  push r3
+  push r4
+  push r5
+  push r6
+  
+  loadn r3, #9  ;posicao inicial
+  loadn r4, #40 ;incremento
+  loadn r5, #30 ;total de incremento
+  loadn r6, #0  ; contador
+  
+  dec r1
+
+Compara_Posicoes_Esquerda_Loop:
+  cmp r1, r3  ;compara posicao da tela
+  jeq Compara_Posicoes_Esquerda_Retorna_1
+  add r3, r3, r4
+  inc r6
+  cmp r6, r5
+  jne Compara_Posicoes_Esquerda_Loop
+  
+  jmp Compara_Posicoes_Esquerda_Retorna_0
+ 
+ 
+Compara_Posicoes_Esquerda_Retorna_1:
+ loadn r7, #1
+ jmp Compara_Posicoes_Esquerda_Fim
+ 
+Compara_Posicoes_Esquerda_Retorna_0:
+ loadn r7, #0
+
+Compara_Posicoes_Esquerda_Fim:
+  pop r6
+  pop r5
+  pop r4
+  pop r3
+  pop r2
+  pop r1
+  pop r0
+
+  rts
+
 ;**************FIM DO ENDURO*****************  
