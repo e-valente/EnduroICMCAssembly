@@ -1,5 +1,6 @@
 ;Jogo Enduro
 ;Emanuel Valente - emanuelvalente@gmail.com
+;Código atualizado em https://github.com/lbull/EnduroICMCAssembly
 
 
 
@@ -44,7 +45,7 @@ str_out: var #41
 ; ------ Programa Principal -----------
 
 main:
-
+	call LimpaTela
 	;primeiro os caracteres
 	;estáticos
 	loadn r1, #logojogo
@@ -66,8 +67,6 @@ main:
 	call ImprimeString    ;imprime score (string)
 	;tela inicial
 	;call LimpaTela
-	;fonteiras
-	call DesenhaFronteiras 
 	loadn r0, #1177  ;poiscao antiga do carro
 	loadn r1, #1177  ;posicao nova do carro
 	call DesenhaCarro
@@ -194,21 +193,10 @@ DesenhaCarro:
  ;dec r1
  
  loadn r6, #1
- call Compara_Posicoes_Esquerda
- cmp r6, r7
+ ;call Compara_Posicoes_Esquerda
+ ;cmp r6, r7
  ;cmp r1, r2
  ;inc r1
- jne DesenhaCarro_OK
- ;trata a fronteira
- inc r0
- inc r1
- mov r7, r0
- jmp DesenhaCarro_FIM
- 
- 
- 
- ;*******fim novo
-DesenhaCarro_OK: 
  ;apagamos a posicao antiga
  loadn r4, #' '
  outchar r4, r0
@@ -223,8 +211,6 @@ DesenhaCarro_OK:
   outchar r4, r1
   mov r7, r6   ;retorna em r7 a posicao do carro
   
-DesenhaCarro_FIM:
-
   pop r6
   pop r5
   pop r4
@@ -286,6 +272,16 @@ ControlaCarro:  ;recebe em r0 a posicao atual do carro
   
 ;r0 posisao atual  
 ControlaCarro_Esquerda:
+
+  ;testa fronteira esquerda
+  call TesteFronteiraPistaEsquerda ;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
+  push r6
+  loadn r6, #1
+  cmp r7, r6
+  pop r6
+  jeq ControlaCarro_FIM
+  ;fim do teste de fronteira esquerda
+ 
  mov r1, r0
  dec r1
  call DesenhaCarro  ;r0->pos antiga, r1 -> atual
@@ -294,6 +290,15 @@ ControlaCarro_Esquerda:
  
  
  ControlaCarro_Direita:
+ ;testa fronteira direita
+  call TesteFronteiraPistaDireita;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
+  push r6
+  loadn r6, #1
+  cmp r7, r6
+  pop r6
+  jeq ControlaCarro_FIM
+  ;fim do teste de fronteira direita
+  
  mov r1, r0
  inc r1
  call DesenhaCarro  ;r0->pos antiga, r1 -> atual
@@ -302,6 +307,15 @@ ControlaCarro_Esquerda:
  
  
  ControlaCarro_Frente:
+  ;testa fronteira frente (cima)
+  call TesteFronteiraPistaCima ;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
+  push r6
+  loadn r6, #1
+  cmp r7, r6
+  pop r6
+  jeq ControlaCarro_FIM
+  ;fim do teste de fronteira cima
+  
  mov r1, r0
  sub r1, r1, r6      ;decrementa 40 posicoes (anda pra frente)
  call DesenhaCarro  ;r0->pos antiga, r1 -> atual
@@ -310,6 +324,16 @@ ControlaCarro_Esquerda:
  
  
  ControlaCarro_Tras:
+ 
+ ;testa fronteira baixo
+  call TesteFronteiraPistaBaixo ;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
+  push r6
+  loadn r6, #1
+  cmp r7, r6
+  pop r6
+  jeq ControlaCarro_FIM
+  ;fim do teste de fronteira baixo
+  
  mov r1, r0
  add r1, r1, r6      ;inccrementa 40 posicoes (anda pra tras)
  call DesenhaCarro  ;r0->pos antiga, r1 -> atual
@@ -342,7 +366,7 @@ Delay:
   push r6
   push r7
   
-  loadn r0, #500
+  loadn r0, #400
   loadn r1, #0
   
   Delay_Loop:
@@ -360,44 +384,6 @@ Delay:
   pop r0
 
 rts
-
-
-;***********DESENHA FRONTEIRAS (esquerda, direita, cima e baixo**
-
-DesenhaFronteiras:
-
-  push r0
-  push r1
-  push r2
-  push r3
-  push r4
-  push r5
-  push r6
-  push r7
-
-;fronteiras da esquerda
-  loadn r0, #'a'
-  loadn r1, #9  ;posicao inicial
-  loadn r2, #40 ;incremento
-  loadn r3, #1210 ; limite
-  
-DesenhaFronteiras_Esquerda:
-  outchar r0, r1
-  add r1, r1, r2
-  cmp r1, r3
-  jle DesenhaFronteiras_Esquerda
-  
- 
-  pop r7
-  pop r6
-  pop r5
-  pop r4
-  pop r3
-  pop r2
-  pop r1
-  pop r0
-
-  rts
   
 ;*****************ESTADOS DA FAIXA
 ;*********ESTADO 0 zero (Apaga as faixas)************
@@ -855,51 +841,221 @@ Loop_PrintInteger:
   
   rts 	  
 
- ;****************Compara_Posicoes para testes de fonteiras
  
-Compara_Posicoes_Esquerda:  ;r1 nova posicao do carro, retorna em r7 se esta no limite: 1->sim, 0->nao
-  push r0
-  push r1
-  push r2
-  push r3
-  push r4
-  push r5
-  push r6
   
-  loadn r3, #9  ;posicao inicial
-  loadn r4, #40 ;incremento
-  loadn r5, #30 ;total de incremento
-  loadn r6, #0  ; contador
   
-  dec r1
+TesteFronteiraPistaEsquerda:  ;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
 
-Compara_Posicoes_Esquerda_Loop:
-  cmp r1, r3  ;compara posicao da tela
-  jeq Compara_Posicoes_Esquerda_Retorna_1
-  add r3, r3, r4
-  inc r6
-  cmp r6, r5
-  jne Compara_Posicoes_Esquerda_Loop
-  
-  jmp Compara_Posicoes_Esquerda_Retorna_0
- 
- 
-Compara_Posicoes_Esquerda_Retorna_1:
- loadn r7, #1
- jmp Compara_Posicoes_Esquerda_Fim
- 
-Compara_Posicoes_Esquerda_Retorna_0:
- loadn r7, #0
 
-Compara_Posicoes_Esquerda_Fim:
-  pop r6
-  pop r5
-  pop r4
-  pop r3
-  pop r2
-  pop r1
-  pop r0
 
-  rts
+	push r0	; protege o r0 na pilha para preservar seu valor
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r2 na pilha para ser usado na subrotina
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4
+	push r5
+	push r6
+
+	
+	dec r0
+	loadn r3, #10  ;pos_ini
+	loadn r4, #40  ;mod
+	
+	mod r5, r0, r4
+	cmp r5, r3
+	jeq TesteFronteiraPistaEsquerda_Ret1  ;chegou na fronteira
+	jmp TesteFronteiraPistaEsquerda_Ret0
+	
+TesteFronteiraPistaEsquerda_Ret1:  ;chegou na fronteira	
+	loadn r7, #1
+	jmp TesteFronteiraPistaEsquerda_FIM
+
+TesteFronteiraPistaEsquerda_Ret0:  ;chegou na fronteira	
+	loadn r7, #0
+	jmp TesteFronteiraPistaEsquerda_FIM	
+	
+TesteFronteiraPistaEsquerda_FIM:	
+
+
+	pop r6
+	pop r5
+	pop r4
+	pop r3	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+;*******************Teste de fronteira para pista da direita****************************	
+TesteFronteiraPistaDireita:  ;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
+
+
+
+	push r0	; protege o r0 na pilha para preservar seu valor
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r2 na pilha para ser usado na subrotina
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4
+	push r5
+	push r6
+
+	
+	inc r0
+	loadn r3, #24 ;pos_ini
+	loadn r4, #40  ;mod
+	
+	mod r5, r0, r4
+	cmp r5, r3
+	jeq TesteFronteiraPistaDireita_Ret1  ;chegou na fronteira
+	jmp TesteFronteiraPistaDireita_Ret0
+	
+TesteFronteiraPistaDireita_Ret1:  ;chegou na fronteira	
+	loadn r7, #1
+	jmp TesteFronteiraPistaDireita_FIM
+
+TesteFronteiraPistaDireita_Ret0:  ;chegou na fronteira	
+	loadn r7, #0
+	jmp TesteFronteiraPistaDireita_FIM	
+	
+TesteFronteiraPistaDireita_FIM:	
+
+
+	pop r6
+	pop r5
+	pop r4
+	pop r3	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r2
+	pop r1
+	pop r0
+	rts	
+	
+	
+	
+;*******************Teste de fronteira para pista de cima ****************************		
+TesteFronteiraPistaCima:  ;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
+
+
+
+	push r0	; protege o r0 na pilha para preservar seu valor
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r2 na pilha para ser usado na subrotina
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4
+	push r5
+	push r6
+
+	
+	loadn r1, #40
+	
+	sub r0, r0, r1
+	loadn r3, #10  ;pos_ini
+	
+	;menor
+	cmp r0, r3
+	jle TesteFronteiraPistaCima_Ret1
+	
+	
+	;posicao normal
+	jmp TesteFronteiraPistaCima_Ret0
+	
+	
+TesteFronteiraPistaCima_Ret1:  ;chegou na fronteira	
+	loadn r7, #1
+	jmp TesteFronteiraPistaCima_FIM
+
+TesteFronteiraPistaCima_Ret0:  ;chegou na fronteira	
+	loadn r7, #0
+	jmp TesteFronteiraPistaCima_FIM	
+	
+TesteFronteiraPistaCima_FIM:	
+
+
+	pop r6
+	pop r5
+	pop r4
+	pop r3	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r2
+	pop r1
+	pop r0
+	rts
+
+;*******************Teste de fronteira para baixo ****************************		
+TesteFronteiraPistaBaixo:  ;r0-> posicao do carro; retorno em r7 1->fronteira 0->posicao permitida
+
+
+
+	push r0	; protege o r0 na pilha para preservar seu valor
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r2 na pilha para ser usado na subrotina
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	push r4
+	push r5
+	push r6
+
+	
+	loadn r1, #40
+	
+	add r0, r0, r1
+	loadn r3, #1199  ;pos_ini
+	
+	;maior
+	cmp r0, r3
+	jeg TesteFronteiraPistaBaixo_Ret1
+	
+	
+	;posicao normal
+	jmp TesteFronteiraPistaBaixo_Ret0
+	
+	
+TesteFronteiraPistaBaixo_Ret1:  ;chegou na fronteira	
+	loadn r7, #1
+	jmp TesteFronteiraPistaBaixo_FIM
+
+TesteFronteiraPistaBaixo_Ret0:  ;chegou na fronteira	
+	loadn r7, #0
+	jmp TesteFronteiraPistaBaixo_FIM	
+	
+TesteFronteiraPistaBaixo_FIM:	
+
+
+	pop r6
+	pop r5
+	pop r4
+	pop r3	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r2
+	pop r1
+	pop r0
+	rts
+		
+;******************LIMPA TELA
+LimpaTela:	
+
+	push r0	; protege o r0 na pilha para preservar seu valor
+	push r1	; protege o r1 na pilha para preservar seu valor
+	push r2	; protege o r2 na pilha para ser usado na subrotina
+	push r3	; protege o r3 na pilha para ser usado na subrotina
+	
+	loadn r0, #0		; Posicao inicial
+	loadn r1, #1200		;posicao final
+	loadn r2, #' '	; Carrega r1 com o endereco do vetor que contem a mensagem
+	loadi r3, r2	; r3 <- Conteudo da MEMORIA enderecada por r2
+
+	
+LimpaTela_Loop:	
+
+	cmp r0, r1	;chegou ao fim da tela? posicao 1199, caso sim, sai
+	jeq LimpaTela_Sai
+	outchar r3, r0
+	inc r0
+	jmp LimpaTela_Loop
+	
+	
+	
+LimpaTela_Sai:	
+	pop r3	; Resgata os valores dos registradores utilizados na Subrotina da Pilha
+	pop r2
+	pop r1
+	pop r0
+	rts
 
 ;**************FIM DO ENDURO*****************  
